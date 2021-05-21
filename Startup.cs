@@ -31,16 +31,25 @@ namespace HeaderDemo
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
-            
-            // Response caching
-            services.AddResponseCaching();
-            
+
             // Cookie policy
             services.Configure<CookiePolicyOptions>(options =>
             {
                 options.MinimumSameSitePolicy = SameSiteMode.None;
                 options.Secure = CookieSecurePolicy.Always;
                 options.HttpOnly = HttpOnlyPolicy.Always;
+            });
+
+            // Cors
+            services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(builder =>
+                {
+                    builder.WithOrigins("https://localhost:5000")
+                        .AllowAnyMethod()
+                        .AllowAnyHeader()
+                        .AllowCredentials();
+                });
             });
             
             services.AddSwaggerGen(c =>
@@ -59,6 +68,11 @@ namespace HeaderDemo
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "HeaderDemo v1"));
             }
 
+            app.UseRouting();
+            
+            // Cors
+            app.UseCors();
+
             app.Use(async (context, next) =>
             {
                 context.Response.Headers.Add("Test-2", "Value");
@@ -75,8 +89,6 @@ namespace HeaderDemo
             app.UseCookiePolicy();
 
             app.UseHttpsRedirection();
-
-            app.UseRouting();
 
             app.UseAuthorization();
 

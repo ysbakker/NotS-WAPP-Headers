@@ -10,7 +10,7 @@
 - [Common response headers](#common-response-headers)
   - [Caching](#caching)
   - [Cookies](#cookies)
-  - [CORS (😡)](#cors-)
+  - [Cors](#cors)
   - [Security](#security)
 
 # About
@@ -80,7 +80,7 @@ public IEnumerable<WeatherForecast> Get()
 }
 ```
 
-If you're using a header from the HTTP spec, you can might be able to set a typed header instead:
+If you're using a header from the HTTP spec, you might be able to set a typed header instead:
 
 ```cs
 app.Use(async (context, next) =>
@@ -199,5 +199,69 @@ As you can see, the defined cookie policy was added to the header.
 
 > Also noteworthy: using `app.UseAuthentication()` or `app.UseSession()` will likely add a `Set-Cookie` header to the response as well. If this is the case, you should call `app.UseCookiePolicy()` before calling these methods. This will ensure the cookie policy is also applied to these cookies.
 
-## CORS (😡)
+## Cors
+
+Configuring cors is pretty straight-forward ([docs](https://docs.microsoft.com/en-us/aspnet/core/security/cors?view=aspnetcore-5.0)). You can use the [cors policy builder](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.cors.infrastructure.corspolicybuilder?view=aspnetcore-5.0):
+
+```cs
+public void ConfigureServices(IServiceCollection services)
+{
+    // Cors
+    services.AddCors(options =>
+    {
+        options.AddDefaultPolicy(builder =>
+        {
+            builder.WithOrigins("https://localhost:5000")
+                .AllowAnyMethod()
+                .AllowAnyHeader()
+                .AllowCredentials();
+        });
+    });
+}
+```
+
+Enable cors (on all endpoints with the default policy) like this:
+
+```cs
+public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+{
+    // Cors
+    app.UseCors();
+}
+```
+
+It's also possible to create a named policy if you want to use different cors policies for different endpoints. The builder will look like this:
+
+```cs
+options.AddPolicy("policyName", builder =>
+{
+    builder.WithOrigins("https://localhost:5000")
+        .AllowAnyMethod()
+        .AllowAnyHeader()
+        .AllowCredentials();
+});
+```
+
+You can then add the policy to specific endpoints with the `[EnableCors]` attribute like this:
+
+```cs
+[HttpGet]
+[EnableCors("policyName")]
+public IEnumerable<WeatherForecast> Get()
+{
+    ...
+}
+```
+
+For the default policy, you can just use `[EnableCors]` without parameters.
+
+> Make sure the `app.UseCors();` statement is in between `app.UseRouting();` and `app.UseEndpoints(...);` if you want to use endpoint specific cors policies.
+
+If your `Origin` matches the allowed origins in the cors policy, the response headers will look like this:
+
+```
+Access-Control-Allow-Credentials: true
+Access-Control-Allow-Origin: https://localhost:5000
+```
+
 ## Security
