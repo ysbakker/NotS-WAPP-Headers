@@ -27,6 +27,12 @@ namespace HeaderDemo.Controllers
         public IEnumerable<WeatherForecast> Get()
         {
             Response.Headers.Add("Test-3", "Value");
+
+            /* Add a cookie to the response
+             * This will add the Set-Cookie HTTP header and add the cookie policy defined in Startup.cs. The policy can
+             * be overridden by supplying a Microsoft.AspNetCore.Http.CookieOptions object to the function below.
+             */
+            Response.Cookies.Append("cookieKey", "cookieValue");
             var rng = new Random();
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
                 {

@@ -23,7 +23,7 @@ Most information on this page originates from [MDN](https://developer.mozilla.or
 
 # Setting response headers in .NET
 
-You can manually set HTTP response headers in .NET Core. Be mindful though that there are a lot of built-in middleware functions in this framework that are very likely to set the headers you desire. These middleware functions are touched upon [here]((#built-in-response-header-middleware)). The Microsoft documentation about .NET Core middleware can be found [here](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-5.0).
+You can manually set HTTP response headers in .NET Core. Be mindful though that there are a lot of built-in middleware functions in this framework that are very likely to set the headers you desire. Some of these middleware functions are touched upon [here]((#common-response-headers)). The Microsoft documentation about .NET Core middleware can be found [here](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-5.0).
 ## Web.config
 > **!** This only works with IIS Express
 
@@ -102,6 +102,8 @@ This section is separated in a few categories. These categories correlate with t
 
 ## Caching
 
+You can use the `Microsoft.Net.Http.Headers.CacheControlHeaderValue` typed header to set this header:
+
 ```cs
 public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 {
@@ -117,11 +119,85 @@ public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
 }
 ```
 
+Of course, you can also set it manually:
+
+```cs
+public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+{
+    app.Use(async (context, next) =>
+    {
+        context.Response.Headers.Add("Cache-Control", "public, max-age 2592000");
+    });
+}
+```
+
+The resulting `Cache-Control` header looks like this:
+
+```
+Cache-Control:	public, max-age=2592000
+```
+
 > You can also enable server-side caching with `app.useResponseCaching()`. See [Microsoft's response caching middleware documentation](https://docs.microsoft.com/en-us/aspnet/core/performance/caching/middleware?view=aspnetcore-5.0) for more details.
 
 ## Cookies
 
+You can configure the global cookie policy with `services.Configure<CookiePolicyOptions>` ([docs](https://docs.microsoft.com/en-us/aspnet/core/security/gdpr?view=aspnetcore-5.0)).
 
+```cs
+public void ConfigureServices(IServiceCollection services)
+{
+    // Cookie policy
+    services.Configure<CookiePolicyOptions>(options =>
+    {
+        options.MinimumSameSitePolicy = SameSiteMode.None;
+        options.Secure = CookieSecurePolicy.Always;
+        options.HttpOnly = HttpOnlyPolicy.Always;
+    });
+}
+```
+
+Adding `app.UseCookiePolicy()` will enforce the policy whenever a cookie is added to the `Response` object:
+
+```cs
+public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+{
+    // Cookie policy
+    app.UseCookiePolicy();
+}
+```
+
+You can add a cookie to a `Response` object like this ([docs](https://docs.microsoft.com/en-us/dotnet/api/microsoft.aspnetcore.http.iresponsecookies.append?view=aspnetcore-5.0)):
+
+```cs
+[HttpGet]
+public IEnumerable<WeatherForecast> Get()
+{
+    /** Add a cookie to the response
+     * This will add the Set-Cookie HTTP header and add the cookie policy defined in Startup.cs. The policy can
+     * be overridden by supplying a Microsoft.AspNetCore.Http.CookieOptions object to the function below.
+     */
+    Response.Cookies.Append("cookieKey", "cookieValue");
+
+    var rng = new Random();
+    return Enumerable.Range(1, 5).Select(index => new WeatherForecast
+        {
+            Date = DateTime.Now.AddDays(index),
+            TemperatureC = rng.Next(-20, 55),
+            Summary = Summaries[rng.Next(Summaries.Length)]
+        })
+        .ToArray();
+}
+```
+
+The resulting `Set-Cookie` header looks like this:
+
+```
+Set-Cookie:	cookieKey=cookieValue; path=/; secure; samesite=none; httponly
+```
+
+As you can see, the defined cookie policy was added to the header.
+
+> Also noteworthy: using `app.UseAuthentication()` or `app.UseSession()` will likely add a `Set-Cookie` header to the response as well. If this is the case, you should call `app.UseCookiePolicy()` before calling these methods. This will ensure the cookie policy is also applied to these cookies.
 
 ## CORS (😡)
 ## Security
