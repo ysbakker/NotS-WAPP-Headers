@@ -43,6 +43,12 @@ namespace HeaderDemo
                 app.UseSwaggerUI(c => c.SwaggerEndpoint("/swagger/v1/swagger.json", "HeaderDemo v1"));
             }
 
+            app.Use(async (context, next) =>
+            {
+                context.Response.Headers.Add("Test-2", "Value");
+                await next();
+            });
+
             app.UseHttpsRedirection();
 
             app.UseRouting();

@@ -26,6 +26,7 @@ namespace HeaderDemo.Controllers
         [HttpGet]
         public IEnumerable<WeatherForecast> Get()
         {
+            Response.Headers.Add("Test-3", "Value");
             var rng = new Random();
             return Enumerable.Range(1, 5).Select(index => new WeatherForecast
                 {
