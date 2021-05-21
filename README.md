@@ -7,7 +7,11 @@
 - [Setting response headers in .NET](#setting-response-headers-in-net)
   - [Web.config](#webconfig)
   - [The Response object](#the-response-object)
-- [Built-in response header middleware](#built-in-response-header-middleware)
+- [Common response headers](#common-response-headers)
+  - [Caching](#caching)
+  - [Cookies](#cookies)
+  - [CORS (😡)](#cors-)
+  - [Security](#security)
 
 # About
 
@@ -19,6 +23,7 @@ Most information on this page originates from [MDN](https://developer.mozilla.or
 
 # Setting response headers in .NET
 
+You can manually set HTTP response headers in .NET Core. Be mindful though that there are a lot of built-in middleware functions in this framework that are very likely to set the headers you desire. These middleware functions are touched upon [here]((#built-in-response-header-middleware)). The Microsoft documentation about .NET Core middleware can be found [here](https://docs.microsoft.com/en-us/aspnet/core/fundamentals/middleware/?view=aspnetcore-5.0).
 ## Web.config
 > **!** This only works with IIS Express
 
@@ -75,4 +80,48 @@ public IEnumerable<WeatherForecast> Get()
 }
 ```
 
-# Built-in response header middleware
+If you're using a header from the HTTP spec, you can might be able to set a typed header instead:
+
+```cs
+app.Use(async (context, next) =>
+{
+    context.Response.GetTypedHeaders().CacheControl = new CacheControlHeaderValue()
+    {
+        Public = true,
+        MaxAge = TimeSpan.FromDays(30)
+    };
+    await next();
+});
+```
+
+The `Microsoft.Net.Http.Headers` namespace ([docs](https://docs.microsoft.com/en-us/dotnet/api/microsoft.net.http.headers?view=aspnetcore-5.0)) contains typed classes for headers that support multiple parameters.
+
+# Common response headers
+
+This section is separated in a few categories. These categories correlate with the categories that the [MDN documentation](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers) uses. All examples are also added to the [`Startup.cs`](Startup.cs) file.
+
+## Caching
+
+```cs
+public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+{
+    app.Use(async (context, next) =>
+    {
+        context.Response.GetTypedHeaders().CacheControl = new CacheControlHeaderValue()
+        {
+            Public = true,
+            MaxAge = TimeSpan.FromDays(30)
+        };
+        await next();
+    });
+}
+```
+
+> You can also enable server-side caching with `app.useResponseCaching()`. See [Microsoft's response caching middleware documentation](https://docs.microsoft.com/en-us/aspnet/core/performance/caching/middleware?view=aspnetcore-5.0) for more details.
+
+## Cookies
+
+
+
+## CORS (😡)
+## Security

@@ -4,12 +4,14 @@ using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.HttpsPolicy;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Net.Http.Headers;
 using Microsoft.OpenApi.Models;
 
 namespace HeaderDemo
@@ -27,6 +29,10 @@ namespace HeaderDemo
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddControllers();
+            
+            // Response caching
+            services.AddResponseCaching();
+            
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo {Title = "HeaderDemo", Version = "v1"});
@@ -46,6 +52,11 @@ namespace HeaderDemo
             app.Use(async (context, next) =>
             {
                 context.Response.Headers.Add("Test-2", "Value");
+                context.Response.GetTypedHeaders().CacheControl = new CacheControlHeaderValue()
+                {
+                    Public = true,
+                    MaxAge = TimeSpan.FromDays(30)
+                };
                 await next();
             });
 
