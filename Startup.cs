@@ -52,6 +52,14 @@ namespace HeaderDemo
                 });
             });
             
+            // HSTS / Scrict-Transport-Security
+            services.AddHsts(options =>
+            {
+                options.Preload = true;
+                options.IncludeSubDomains = true;
+                options.MaxAge = TimeSpan.FromDays(30);
+            });
+            
             services.AddSwaggerGen(c =>
             {
                 c.SwaggerDoc("v1", new OpenApiInfo {Title = "HeaderDemo", Version = "v1"});
@@ -82,11 +90,15 @@ namespace HeaderDemo
                     Public = true,
                     MaxAge = TimeSpan.FromDays(30)
                 };
+                
                 await next();
             });
 
             // Cookie policy
             app.UseCookiePolicy();
+            
+            // HSTS
+            app.UseHsts();
 
             app.UseHttpsRedirection();
 

@@ -12,6 +12,8 @@
   - [Cookies](#cookies)
   - [Cors](#cors)
   - [Security](#security)
+    - [HSTS](#hsts)
+    - [Unset Server header](#unset-server-header)
 
 # About
 
@@ -265,3 +267,56 @@ Access-Control-Allow-Origin: https://localhost:5000
 ```
 
 ## Security
+
+### HSTS
+
+If you want to instruct the client to request over HTTPS only you can enable HSTS. This will add the `Strict-Transport-Security` response header. By default, this doesn't work on local addresses because it could cause issues. To enable HSTS, add the following configuration:
+
+```cs
+public void ConfigureServices(IServiceCollection services)
+{
+    // HSTS / Scrict-Transport-Security
+    services.AddHsts(options =>
+    {
+        options.Preload = true;
+        options.IncludeSubDomains = true;
+        options.MaxAge = TimeSpan.FromDays(30);
+    });
+}
+```
+
+Next, enable it for all responses:
+
+```cs
+public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+{
+    // HSTS
+    app.UseHsts();
+}
+```
+
+This will add the following header to all responses (unless the server runs on local addresses):
+
+```
+Strict-Transport-Security: max-age=2592000; includeSubDomains; preload
+```
+
+### Unset Server header
+
+.NET Core adds the `Server: Kestrel` header by default. To prevent targeted attacks, you can unset this in your [`Program.cs`](Program.cs):
+
+```cs
+public static IHostBuilder CreateHostBuilder(string[] args) =>
+    Host.CreateDefaultBuilder(args)
+        .ConfigureWebHostDefaults(webBuilder =>
+        {
+            webBuilder.UseStartup<Startup>();
+            
+            // Add this to remove the server header
+            webBuilder.UseKestrel(options =>
+            {
+                options.AddServerHeader = false;
+            });
+        });
+```
+

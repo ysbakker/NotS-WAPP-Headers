@@ -25,7 +25,6 @@ namespace HeaderDemo.Controllers
         }
 
         [HttpGet]
-        [EnableCors("policyName")]
         public IEnumerable<WeatherForecast> Get()
         {
             Response.Headers.Add("Test-3", "Value");
